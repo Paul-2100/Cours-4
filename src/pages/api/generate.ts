@@ -41,7 +41,7 @@ function getReplicateClient(): Replicate {
 async function parseForm(req: NextApiRequest): Promise<{ fields: any; files: any }> {
   return new Promise((resolve, reject) => {
     const form = new IncomingForm();
-    form.parse(req, (err, fields, files) => {
+    form.parse(req, (err: Error | null, fields: any, files: any) => {
       if (err) reject(err);
       else resolve({ fields, files });
     });
