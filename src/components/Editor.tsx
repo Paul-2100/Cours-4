@@ -8,7 +8,7 @@ const Editor: React.FC = () => {
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
 
-    const handleImageUpload = (file: File) => {
+    const handleImageUpload = (file: File | null) => {
         setSelectedImage(file);
     };
 
