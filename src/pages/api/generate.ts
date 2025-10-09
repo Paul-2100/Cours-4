@@ -234,7 +234,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const insertPayload: any = {
         title: fields.title ?? null,
-        description: fields.description ?? null,
+        prompt: prompt,
         image_path: outputFileName,
         input_image_path: fileName,
       };

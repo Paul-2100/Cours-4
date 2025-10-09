@@ -5,7 +5,7 @@ import { supabase } from '../utils/supabaseClient';
 type Project = {
   id: string;
   title: string;
-  description: string;
+  prompt: string;
   image_path: string;
   created_at: string;
 };
@@ -38,7 +38,6 @@ export default function Dashboard() {
     form.append('image', file);
     form.append('title', title || 'Sans titre');
     form.append('prompt', prompt);
-    form.append('description', prompt);
 
     const res = await fetch('/api/generate', { method: 'POST', body: form });
     if (!res.ok) {
@@ -76,23 +75,34 @@ export default function Dashboard() {
 
       <section className="projects">
         <h2>Mes projets</h2>
-        <div className="grid">
-          {projects.map(p => (
-            <div key={p.id} className="card">
-              {(() => {
-                try {
-                  const { data } = supabase.storage.from('output-image').getPublicUrl(p.image_path);
-                  return <img src={data?.publicUrl ?? ''} alt={p.title} />;
-                } catch (e) {
-                  return <img src="" alt={p.title} />;
-                }
-              })()}
-              <h3>{p.title}</h3>
-              <p>{p.description}</p>
-              <button onClick={() => handleDelete(p.id)}>Supprimer</button>
-            </div>
-          ))}
-        </div>
+        {projects.length === 0 ? (
+          <p style={{ textAlign: 'center', color: '#666', marginTop: '32px' }}>
+            Aucun projet pour le moment. Créez votre premier projet ci-dessus !
+          </p>
+        ) : (
+          <div className="grid">
+            {projects.map(p => {
+              const { data } = supabase.storage.from('output-image').getPublicUrl(p.image_path);
+              const imageUrl = data?.publicUrl || '';
+              
+              return (
+                <div key={p.id} className="card">
+                  <img 
+                    src={imageUrl} 
+                    alt={p.title} 
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EImage non disponible%3C/text%3E%3C/svg%3E';
+                    }}
+                  />
+                  <h3>{p.title}</h3>
+                  <p>{p.prompt}</p>
+                  <button onClick={() => handleDelete(p.id)}>Supprimer</button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
     </main>
   );
