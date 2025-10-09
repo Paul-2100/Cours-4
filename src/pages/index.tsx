@@ -1,65 +1,50 @@
-import React, { useState } from 'react';
+import React from 'react';
+import Link from 'next/link';
+import { useAuth } from '../../AuthContext';
 
 export default function Home() {
-  const [file, setFile] = useState<File | null>(null);
-  const [prompt, setPrompt] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [resultUrl, setResultUrl] = useState('');
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-    }
-  };
-
-  const handleGenerate = async () => {
-    if (!file || !prompt) return;
-    setLoading(true);
-    setResultUrl('');
-
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
-      formData.append('prompt', prompt);
-
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const errorPayload = await res.json().catch(() => ({}));
-        const message = errorPayload?.error || 'Erreur lors de la génération';
-        throw new Error(message);
-      }
-
-      const data = await res.json();
-      setResultUrl(data.output_image_url);
-    } catch (err) {
-      console.error(err);
-      alert(err instanceof Error ? err.message : 'Erreur lors de la génération');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { user } = useAuth();
 
   return (
-    <main className="container">
-      <h1 className="title">AI Image Editor</h1>
-      <div>
-        <input type="file" accept="image/*" onChange={handleFileChange} />
-        <textarea
-          placeholder="Décris la transformation..."
-          value={prompt}
-          onChange={e => setPrompt(e.target.value)}
-        />
-        <button className="generate-btn" onClick={handleGenerate} disabled={loading}>
-          {loading ? 'Génération en cours...' : 'Générer'}
-        </button>
-      </div>
-      <div className="result">
-        {resultUrl && <img src={resultUrl} alt="Image générée" style={{maxWidth: '100%'}} />}
-      </div>
+    <main className="landing">
+      <section className="hero">
+        <h1>AI Image Editor</h1>
+        <p>Transformez vos images avec l'intelligence artificielle</p>
+        {!user ? (
+          <div className="cta">
+            <Link href="/signup">
+              <button className="primary-btn">Commencer gratuitement</button>
+            </Link>
+            <Link href="/login">
+              <button className="secondary-btn">Se connecter</button>
+            </Link>
+          </div>
+        ) : (
+          <div className="cta">
+            <Link href="/dashboard">
+              <button className="primary-btn">Accéder à mon espace</button>
+            </Link>
+          </div>
+        )}
+      </section>
+      
+      <section className="features">
+        <h2>Fonctionnalités</h2>
+        <div className="feature-grid">
+          <div className="feature">
+            <h3>🎨 Transformation IA</h3>
+            <p>Transformez vos images avec des prompts en langage naturel</p>
+          </div>
+          <div className="feature">
+            <h3>☁️ Stockage cloud</h3>
+            <p>Tous vos projets sauvegardés dans le cloud</p>
+          </div>
+          <div className="feature">
+            <h3>🔒 Sécurisé</h3>
+            <p>Authentification et données protégées</p>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

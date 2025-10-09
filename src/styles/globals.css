@@ -1,7 +1,7 @@
 body {
   margin: 0;
   font-family: 'Inter', Arial, sans-serif;
-  background: #fff;
+  background: #f9fafb;
   color: #222;
 }
 
@@ -19,6 +19,385 @@ a:hover {
   text-decoration: underline;
 }
 
+/* Header */
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 32px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.site-header .left a {
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: #e53935;
+}
+
+.site-header .right {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.site-header .email {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.site-header button,
+.site-header a {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  background: #e53935;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+}
+
+.site-header button:hover,
+.site-header a:hover {
+  background: #b71c1c;
+  text-decoration: none;
+}
+
+/* Landing Page */
+.landing {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 64px 32px;
+}
+
+.landing .hero {
+  text-align: center;
+  margin-bottom: 64px;
+}
+
+.landing .hero h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #e53935;
+  margin-bottom: 16px;
+}
+
+.landing .hero p {
+  font-size: 1.3rem;
+  color: #666;
+  margin-bottom: 32px;
+}
+
+.landing .cta {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.landing .primary-btn {
+  background: #e53935;
+  color: #fff;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.landing .primary-btn:hover {
+  background: #b71c1c;
+}
+
+.landing .secondary-btn {
+  background: #fff;
+  color: #e53935;
+  border: 2px solid #e53935;
+  padding: 14px 32px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.landing .secondary-btn:hover {
+  background: #fef2f2;
+}
+
+.landing .features {
+  text-align: center;
+}
+
+.landing .features h2 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 48px;
+  color: #333;
+}
+
+.landing .feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 32px;
+}
+
+.landing .feature {
+  background: #fff;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.landing .feature h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.landing .feature p {
+  color: #666;
+  font-size: 1rem;
+}
+
+/* Auth Pages */
+.auth-page {
+  max-width: 480px;
+  margin: 80px auto;
+  padding: 32px;
+}
+
+.auth-page h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 32px;
+  color: #333;
+}
+
+.auth-form {
+  background: #fff;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.auth-form .tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.auth-form .tabs button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.auth-form .tabs button.active {
+  background: #e53935;
+  color: #fff;
+}
+
+.auth-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.auth-form input {
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: #e53935;
+}
+
+.auth-form .error {
+  background: #fee;
+  color: #c33;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.auth-form button[type="submit"] {
+  padding: 14px;
+  background: #e53935;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.auth-form button[type="submit"]:hover {
+  background: #b71c1c;
+}
+
+.auth-form button[type="submit"]:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Dashboard */
+.dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 32px;
+}
+
+.dashboard h1 {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 40px;
+}
+
+.dashboard .upload {
+  background: #fff;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  margin-bottom: 48px;
+}
+
+.dashboard .upload h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #333;
+}
+
+.dashboard .upload form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboard .upload input,
+.dashboard .upload textarea {
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dashboard .upload textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.dashboard .upload button {
+  padding: 14px;
+  background: #e53935;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dashboard .upload button:hover {
+  background: #b71c1c;
+}
+
+.dashboard .upload button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.dashboard .projects h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #333;
+}
+
+.dashboard .grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.dashboard .card {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.dashboard .card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+.dashboard .card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.dashboard .card h3 {
+  padding: 16px 16px 8px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.dashboard .card p {
+  padding: 0 16px 16px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.dashboard .card button {
+  margin: 0 16px 16px;
+  padding: 10px 20px;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.dashboard .card button:hover {
+  background: #dc2626;
+}
+
+/* Old styles kept for compatibility */
 .container {
   max-width: 600px;
   margin: 40px auto;

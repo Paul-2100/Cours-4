@@ -54,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const supabase = getSupabaseClient();
+  const supabase = getSupabaseClient();
     const replicate = getReplicateClient();
 
     const { fields, files } = await parseForm(req);
@@ -211,6 +211,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         details: outputSignedUrlError?.message,
         output_url: replicateOutputUrlForResponse,
       });
+    }
+
+    // Try to get authenticated user from Authorization header (Bearer) or from cookies
+    let userId: string | null = null;
+    try {
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        const { data: userData } = await supabase.auth.getUser(token);
+        userId = userData.user?.id ?? null;
+      } else {
+        // attempt to read user from cookie session
+        const { data: { user } } = await supabase.auth.getUser();
+        userId = user?.id ?? null;
+      }
+    } catch (e) {
+      userId = null;
+    }
+
+    // Insert a project row linking to the stored output image
+    try {
+      const insertPayload: any = {
+        title: fields.title ?? null,
+        description: fields.description ?? null,
+        image_path: outputFileName,
+        input_image_path: fileName,
+      };
+      if (userId) insertPayload.user_id = userId;
+
+      const { error: insertError } = await supabase.from('projects').insert([insertPayload]);
+      if (insertError) {
+        console.error('Insert project error', insertError);
+      }
+    } catch (e) {
+      console.error('Failed to insert project', e);
     }
 
     res.status(200).json({
