@@ -4,16 +4,16 @@ import { supabase } from '../utils/supabaseClient';
 
 type Project = {
   id: string;
-  title: string;
   prompt: string;
-  image_path: string;
+  input_image_url: string;
+  output_image_url: string;
+  status: string;
   created_at: string;
 };
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [title, setTitle] = useState('');
   const [prompt, setPrompt] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,8 +24,24 @@ export default function Dashboard() {
   }, [user]);
 
   async function fetchProjects() {
-    const res = await fetch('/api/projects');
-    if (!res.ok) return;
+    // Récupérer le token d'accès depuis la session Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      console.error('No session found');
+      return;
+    }
+    
+    const res = await fetch('/api/projects', {
+      credentials: 'include',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`
+      }
+    });
+    if (!res.ok) {
+      console.error('Failed to fetch projects:', res.status);
+      return;
+    }
     const data = await res.json();
     setProjects(data.projects ?? []);
   }
@@ -36,26 +52,66 @@ export default function Dashboard() {
     setLoading(true);
     const form = new FormData();
     form.append('image', file);
-    form.append('title', title || 'Sans titre');
     form.append('prompt', prompt);
 
-    const res = await fetch('/api/generate', { method: 'POST', body: form });
+    // Récupérer le token d'accès
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      alert('Session expirée, reconnectez-vous');
+      setLoading(false);
+      return;
+    }
+
+    const res = await fetch('/api/generate', { 
+      method: 'POST', 
+      body: form,
+      credentials: 'include',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`
+      }
+    });
+    
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       alert(err.error || 'Erreur');
       setLoading(false);
       return;
     }
+    
+    // Récupérer la réponse avec l'URL de l'image générée
+    const result = await res.json();
+    console.log('✅ Génération terminée:', result);
+    
     setLoading(false);
-    setTitle('');
     setPrompt('');
     setFile(null);
+    
+    // Rafraîchir la liste des projets
     await fetchProjects();
+    
+    // Afficher une confirmation
+    alert('Image générée avec succès ! Visible dans "Mes projets" ci-dessous.');
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer ce projet ?')) return;
-    const res = await fetch('/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    
+    // Récupérer le token d'accès
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      alert('Session expirée, reconnectez-vous');
+      return;
+    }
+    
+    const res = await fetch('/api/delete', { 
+      method: 'POST', 
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      }, 
+      body: JSON.stringify({ id }),
+      credentials: 'include'
+    });
     if (!res.ok) return alert('Erreur suppression');
     await fetchProjects();
   };
@@ -66,7 +122,6 @@ export default function Dashboard() {
       <section className="upload">
         <h2>Créer un projet</h2>
         <form onSubmit={handleUpload}>
-          <input type="text" placeholder="Titre (optionnel)" value={title} onChange={e => setTitle(e.target.value)} />
           <input type="file" accept="image/*" onChange={e => setFile(e.target.files?.[0] ?? null)} required />
           <textarea placeholder="Décris la transformation..." value={prompt} onChange={e => setPrompt(e.target.value)} required />
           <button type="submit" disabled={loading}>{loading ? 'Génération...' : 'Générer'}</button>
@@ -82,21 +137,22 @@ export default function Dashboard() {
         ) : (
           <div className="grid">
             {projects.map(p => {
-              const { data } = supabase.storage.from('output-image').getPublicUrl(p.image_path);
-              const imageUrl = data?.publicUrl || '';
+              const imageUrl = p.output_image_url || p.input_image_url || '';
               
               return (
                 <div key={p.id} className="card">
+                  {p.status === 'processing' && (
+                    <div className="processing-badge">⏳ En cours...</div>
+                  )}
                   <img 
                     src={imageUrl} 
-                    alt={p.title} 
+                    alt={p.prompt} 
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EImage non disponible%3C/text%3E%3C/svg%3E';
                     }}
                   />
-                  <h3>{p.title}</h3>
-                  <p>{p.prompt}</p>
+                  <p className="prompt">{p.prompt}</p>
                   <button onClick={() => handleDelete(p.id)}>Supprimer</button>
                 </div>
               );

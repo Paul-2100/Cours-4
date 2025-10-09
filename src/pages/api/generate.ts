@@ -213,30 +213,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Try to get authenticated user from Authorization header (Bearer) or from cookies
+    // Try to get authenticated user from Authorization header
     let userId: string | null = null;
     try {
       const authHeader = req.headers.authorization;
-      if (authHeader?.startsWith('Bearer ')) {
-        const token = authHeader.split(' ')[1];
-        const { data: userData } = await supabase.auth.getUser(token);
-        userId = userData.user?.id ?? null;
-      } else {
-        // attempt to read user from cookie session
-        const { data: { user } } = await supabase.auth.getUser();
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        const { data: { user } } = await supabase.auth.getUser(token);
         userId = user?.id ?? null;
       }
     } catch (e) {
       userId = null;
     }
 
-    // Insert a project row linking to the stored output image
+    // Insert a project row with URLs instead of paths
     try {
       const insertPayload: any = {
-        title: fields.title ?? null,
         prompt: prompt,
-        image_path: outputFileName,
-        input_image_path: fileName,
+        input_image_url: signedUrlData.signedUrl,
+        output_image_url: outputSignedUrlData.signedUrl,
+        status: 'completed',
       };
       if (userId) insertPayload.user_id = userId;
 
