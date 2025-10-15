@@ -8,7 +8,10 @@ export default function Header() {
   return (
     <header className="site-header">
       <div className="left">
-        <Link href="/">Accueil</Link>
+        <Link href="/" className="logo-link">
+          <span className="logo-icon">✨</span>
+          <span className="logo-text">AI Image Editor</span>
+        </Link>
       </div>
       <div className="right">
         {user ? (

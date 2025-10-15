@@ -6,12 +6,12 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req, res });
 
-  const { data } = await supabase.auth.getSession();
-  const session = data.session;
+  const { data: { session } } = await supabase.auth.getSession();
 
   const pathname = req.nextUrl.pathname;
-  // Protect dashboard and api routes
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/api')) {
+  
+  // Protéger les routes /dashboard et /api (sauf /api/generate qui peut être appelé sans auth)
+  if (pathname.startsWith('/dashboard') || (pathname.startsWith('/api') && pathname !== '/api/generate')) {
     if (!session) {
       const url = req.nextUrl.clone();
       url.pathname = '/login';

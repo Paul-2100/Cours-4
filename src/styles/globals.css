@@ -30,7 +30,57 @@ a:hover {
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-.site-header .left a {
+.site-header .left .logo-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #e53935;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+  border: 2px solid #ffcdd2;
+}
+
+.site-header .left .logo-link:hover {
+  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+  border-color: #ef5350;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 83, 80, 0.25);
+}
+
+.site-header .left .logo-icon {
+  font-size: 2.2rem;
+  animation: sparkle 2.5s ease-in-out infinite;
+  filter: drop-shadow(0 2px 4px rgba(229, 57, 53, 0.3));
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.15) rotate(-8deg);
+  }
+  75% {
+    transform: scale(1.15) rotate(8deg);
+  }
+}
+
+.site-header .left .logo-text {
+  background: linear-gradient(135deg, #c62828 0%, #e53935 50%, #ff5252 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 4px rgba(198, 40, 40, 0.1);
+}
+
+.site-header .left a:not(.logo-link) {
   font-weight: 600;
   font-size: 1.2rem;
   color: #e53935;
@@ -402,20 +452,53 @@ a:hover {
   -webkit-box-orient: vertical;
 }
 
-.dashboard .card button {
-  margin: 0 16px 16px;
-  padding: 10px 20px;
-  background: #ef4444;
-  color: #fff;
+.dashboard .card .card-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.dashboard .card .card-actions button {
+  flex: 1;
+  margin: 0;
+  padding: 10px 16px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background 0.2s;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
-.dashboard .card button:hover {
+.dashboard .card .download-btn {
+  background: #10b981;
+  color: #fff;
+}
+
+.dashboard .card .download-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.dashboard .card .delete-btn {
+  background: #ef4444;
+  color: #fff;
+}
+
+.dashboard .card .delete-btn:hover {
   background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* Anciens styles de bouton (à supprimer) */
+.dashboard .card button:not(.download-btn):not(.delete-btn) {
+  display: none;
 }
 
 /* Old styles kept for compatibility */

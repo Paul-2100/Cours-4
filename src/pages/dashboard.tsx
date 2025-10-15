@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../AuthContext';
 import { supabase } from '../utils/supabaseClient';
+import { useRouter } from 'next/router';
 
 type Project = {
   id: string;
@@ -13,10 +14,18 @@ type Project = {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [prompt, setPrompt] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Rediriger vers /login si non connecté
+  useEffect(() => {
+    if (user === null) {
+      router.push('/login');
+    }
+  }, [user, router]);
 
   useEffect(() => {
     if (!user) return;
@@ -116,6 +125,38 @@ export default function Dashboard() {
     await fetchProjects();
   };
 
+  const handleDownload = async (imageUrl: string, filename: string) => {
+    try {
+      // Récupérer l'image
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      // Créer un lien de téléchargement
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Nettoyer
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+      alert('Erreur lors du téléchargement de l\'image');
+    }
+  };
+
+  // Afficher un loader pendant la vérification de l'auth
+  if (user === null) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <p>Redirection...</p>
+      </div>
+    );
+  }
+
   return (
     <main className="dashboard">
       <h1>Mon espace</h1>
@@ -138,6 +179,7 @@ export default function Dashboard() {
           <div className="grid">
             {projects.map(p => {
               const imageUrl = p.output_image_url || p.input_image_url || '';
+              const filename = `projet-${p.id.substring(0, 8)}.jpg`;
               
               return (
                 <div key={p.id} className="card">
@@ -153,7 +195,21 @@ export default function Dashboard() {
                     }}
                   />
                   <p className="prompt">{p.prompt}</p>
-                  <button onClick={() => handleDelete(p.id)}>Supprimer</button>
+                  <div className="card-actions">
+                    <button 
+                      className="download-btn"
+                      onClick={() => handleDownload(imageUrl, filename)}
+                      title="Télécharger l'image"
+                    >
+                      📥 Télécharger
+                    </button>
+                    <button 
+                      className="delete-btn"
+                      onClick={() => handleDelete(p.id)}
+                    >
+                      🗑️ Supprimer
+                    </button>
+                  </div>
                 </div>
               );
             })}

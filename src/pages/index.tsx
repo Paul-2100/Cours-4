@@ -1,9 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../AuthContext';
+import { useRouter } from 'next/router';
 
 export default function Home() {
   const { user } = useAuth();
+  const router = useRouter();
+
+  // Rediriger automatiquement vers le dashboard si connecté
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
 
   return (
     <main className="landing">
