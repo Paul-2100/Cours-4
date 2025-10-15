@@ -1,9 +1,21 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../AuthContext';
+import { useRouter } from 'next/router';
 
 export default function Header() {
   const { user, signOut } = useAuth();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.push('/login');
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+      alert('Erreur lors de la déconnexion');
+    }
+  };
 
   return (
     <header className="site-header">
@@ -17,7 +29,7 @@ export default function Header() {
         {user ? (
           <>
             <span className="email">{user.email}</span>
-            <button onClick={() => signOut()}>Se déconnecter</button>
+            <button onClick={handleSignOut}>Se déconnecter</button>
           </>
         ) : (
           <>

@@ -33,26 +33,44 @@ export default function Dashboard() {
   }, [user]);
 
   async function fetchProjects() {
-    // Récupérer le token d'accès depuis la session Supabase
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      console.error('No session found');
-      return;
-    }
-    
-    const res = await fetch('/api/projects', {
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`
+    try {
+      // Récupérer le token d'accès depuis la session Supabase
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        return;
       }
-    });
-    if (!res.ok) {
-      console.error('Failed to fetch projects:', res.status);
-      return;
+      
+      if (!session) {
+        console.error('No session found');
+        // Forcer une reconnexion
+        router.push('/login');
+        return;
+      }
+      
+      console.log('📡 Fetching projects with token:', session.access_token.substring(0, 30) + '...');
+      
+      const res = await fetch('/api/projects', {
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      
+      if (!res.ok) {
+        console.error('Failed to fetch projects:', res.status, res.statusText);
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Error details:', errorData);
+        return;
+      }
+      
+      const data = await res.json();
+      console.log('✅ Projects loaded:', data.projects?.length || 0);
+      setProjects(data.projects ?? []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
     }
-    const data = await res.json();
-    setProjects(data.projects ?? []);
   }
 
   const handleUpload = async (e: React.FormEvent) => {
