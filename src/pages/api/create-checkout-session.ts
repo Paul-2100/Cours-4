@@ -111,6 +111,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('✅ Project created:', project.id);
 
+    // Préparer les URLs (retirer /dashboard si déjà présent)
+    const baseUrl = process.env.NEXT_PUBLIC_URL?.replace(/\/dashboard$/, '') || 'http://localhost:3001';
+    const successUrl = `${baseUrl}/dashboard?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${baseUrl}/dashboard?canceled=true`;
+    
+    console.log('🔗 Success URL:', successUrl);
+    console.log('🔗 Cancel URL:', cancelUrl);
+
     // Créer la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -128,8 +136,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_URL}/dashboard?canceled=true`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: {
         project_id: project.id,
         user_id: user.id,
@@ -152,6 +160,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error: any) {
     console.error('❌ Error in create-checkout-session:', error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    console.error('❌ Error type:', error.type);
+    console.error('❌ Error code:', error.code);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error raw:', error.raw);
+    
+    // Retourner les détails de l'erreur Stripe
+    const errorMessage = error.message || 'Internal server error';
+    const errorDetails = error.raw?.message || error.type || 'Unknown error';
+    
+    return res.status(500).json({ 
+      error: errorMessage,
+      details: errorDetails,
+      type: error.type
+    });
   }
 }
