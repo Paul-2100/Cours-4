@@ -1,14 +1,14 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from './src/utils/supabaseClient';
+import { supabase } from './src/lib/supabaseClient';
 
-type AuthContextType = {
+interface AuthContextType {
   user: User | null;
   session: Session | null;
   signUp: (email: string, password: string) => Promise<any>;
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<any>;
-};
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
