@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { useRouter } from 'next/router';
+import Header from '@/components/Header';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Upload, Download, Trash2, ImageIcon } from 'lucide-react';
 
 type Project = {
   id: string;
@@ -169,71 +176,151 @@ export default function Dashboard() {
   // Afficher un loader pendant la vérification de l'auth
   if (user === null) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <p>Redirection...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
-    <main className="dashboard">
-      <h1>Mon espace</h1>
-      <section className="upload">
-        <h2>Créer un projet</h2>
-        <form onSubmit={handleUpload}>
-          <input type="file" accept="image/*" onChange={e => setFile(e.target.files?.[0] ?? null)} required />
-          <textarea placeholder="Décris la transformation..." value={prompt} onChange={e => setPrompt(e.target.value)} required />
-          <button type="submit" disabled={loading}>{loading ? 'Génération...' : 'Générer'}</button>
-        </form>
-      </section>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <Header />
+      
+      <main className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-pink-600 to-red-600 bg-clip-text text-transparent">
+            Mon espace
+          </h1>
+          <p className="text-slate-600">Créez et gérez vos projets de transformation d'images par IA</p>
+        </div>
 
-      <section className="projects">
-        <h2>Mes projets</h2>
-        {projects.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#666', marginTop: '32px' }}>
-            Aucun projet pour le moment. Créez votre premier projet ci-dessus !
+        {/* Section Upload */}
+        <Card className="mb-12 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Créer un nouveau projet
+            </CardTitle>
+            <CardDescription>
+              Téléchargez une image et décrivez la transformation souhaitée
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleUpload} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="image">Image</Label>
+                <Input 
+                  id="image"
+                  type="file" 
+                  accept="image/*" 
+                  onChange={e => setFile(e.target.files?.[0] ?? null)} 
+                  required 
+                  className="cursor-pointer"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="prompt">Description de la transformation</Label>
+                <textarea
+                  id="prompt"
+                  placeholder="Ex: Transforme cette image en style cartoon coloré..."
+                  value={prompt}
+                  onChange={e => setPrompt(e.target.value)}
+                  required
+                  className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+              
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Génération en cours...
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="mr-2 h-4 w-4" />
+                    Générer
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Section Projets */}
+        <div className="mb-6">
+          <h2 className="text-3xl font-bold mb-2">Mes projets</h2>
+          <p className="text-slate-600">
+            {projects.length === 0 
+              ? "Aucun projet pour le moment" 
+              : `${projects.length} projet${projects.length > 1 ? 's' : ''}`
+            }
           </p>
+        </div>
+
+        {projects.length === 0 ? (
+          <Card className="text-center py-12">
+            <CardContent>
+              <ImageIcon className="h-16 w-16 mx-auto mb-4 text-slate-300" />
+              <p className="text-slate-500 mb-2">Aucun projet pour le moment</p>
+              <p className="text-sm text-slate-400">Créez votre premier projet ci-dessus !</p>
+            </CardContent>
+          </Card>
         ) : (
-          <div className="grid">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map(p => {
               const imageUrl = p.output_image_url || p.input_image_url || '';
               const filename = `projet-${p.id.substring(0, 8)}.jpg`;
               
               return (
-                <div key={p.id} className="card">
-                  {p.status === 'processing' && (
-                    <div className="processing-badge">⏳ En cours...</div>
-                  )}
-                  <img 
-                    src={imageUrl} 
-                    alt={p.prompt} 
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EImage non disponible%3C/text%3E%3C/svg%3E';
-                    }}
-                  />
-                  <p className="prompt">{p.prompt}</p>
-                  <div className="card-actions">
-                    <button 
-                      className="download-btn"
+                <Card key={p.id} className="overflow-hidden hover:shadow-xl transition-shadow">
+                  <CardHeader className="p-0 relative">
+                    {p.status === 'processing' && (
+                      <Badge className="absolute top-2 right-2 z-10" variant="secondary">
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        En cours...
+                      </Badge>
+                    )}
+                    <div className="aspect-square relative bg-slate-100">
+                      <img 
+                        src={imageUrl} 
+                        alt={p.prompt}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23f1f5f9" width="400" height="400"/%3E%3Ctext fill="%2394a3b8" x="50%25" y="50%25" text-anchor="middle" dy=".3em" font-size="16"%3EImage non disponible%3C/text%3E%3C/svg%3E';
+                        }}
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <p className="text-sm text-slate-700 line-clamp-2">{p.prompt}</p>
+                  </CardContent>
+                  <CardFooter className="p-4 pt-0 flex gap-2">
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
                       onClick={() => handleDownload(imageUrl, filename)}
-                      title="Télécharger l'image"
                     >
-                      📥 Télécharger
-                    </button>
-                    <button 
-                      className="delete-btn"
+                      <Download className="mr-2 h-4 w-4" />
+                      Télécharger
+                    </Button>
+                    <Button 
+                      variant="destructive"
+                      size="sm"
                       onClick={() => handleDelete(p.id)}
                     >
-                      🗑️ Supprimer
-                    </button>
-                  </div>
-                </div>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </CardFooter>
+                </Card>
               );
             })}
           </div>
         )}
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }
