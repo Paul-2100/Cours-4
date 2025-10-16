@@ -16,6 +16,7 @@ type Project = {
   input_image_url: string;
   output_image_url: string;
   status: string;
+  payment_status: string;
   created_at: string;
 };
 
@@ -38,6 +39,26 @@ export default function Dashboard() {
     if (!user) return;
     fetchProjects();
   }, [user]);
+
+  // Gérer le retour de Stripe Checkout
+  useEffect(() => {
+    const { session_id, canceled } = router.query;
+    
+    if (canceled) {
+      alert('Paiement annulé');
+      // Nettoyer l'URL
+      router.replace('/dashboard', undefined, { shallow: true });
+    }
+    
+    if (session_id && typeof session_id === 'string') {
+      console.log('✅ Retour de Stripe avec session:', session_id);
+      alert('Paiement confirmé ! Vous pouvez maintenant générer votre image.');
+      // Nettoyer l'URL
+      router.replace('/dashboard', undefined, { shallow: true });
+      // Rafraîchir les projets
+      fetchProjects();
+    }
+  }, [router.query]);
 
   async function fetchProjects() {
     try {
@@ -84,47 +105,115 @@ export default function Dashboard() {
     e.preventDefault();
     if (!file || !prompt) return alert('Sélectionne un fichier et entre un prompt');
     setLoading(true);
-    const form = new FormData();
-    form.append('image', file);
-    form.append('prompt', prompt);
+    
+    try {
+      const form = new FormData();
+      form.append('image', file);
+      form.append('prompt', prompt);
 
-    // Récupérer le token d'accès
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      alert('Session expirée, reconnectez-vous');
-      setLoading(false);
-      return;
-    }
-
-    const res = await fetch('/api/generate', { 
-      method: 'POST', 
-      body: form,
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`
+      // Récupérer le token d'accès
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Session expirée, reconnectez-vous');
+        setLoading(false);
+        return;
       }
-    });
-    
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      alert(err.error || 'Erreur');
+
+      console.log('📦 Création de la session Stripe...');
+      
+      // Appeler l'API pour créer la session Stripe Checkout
+      const res = await fetch('/api/create-checkout-session', { 
+        method: 'POST', 
+        body: form,
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Erreur lors de la création de la session de paiement');
+        setLoading(false);
+        return;
+      }
+      
+      // Récupérer l'URL de checkout
+      const result = await res.json();
+      console.log('✅ Session créée:', result.sessionId);
+      
+      // Rediriger vers Stripe Checkout
+      if (result.url) {
+        console.log('🔄 Redirection vers Stripe Checkout...');
+        window.location.href = result.url;
+      } else {
+        alert('Erreur: URL de paiement non disponible');
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+      alert('Une erreur est survenue');
       setLoading(false);
-      return;
     }
+  };
+
+  const handleGenerate = async (projectId: string, inputImageUrl: string, promptText: string) => {
+    if (!confirm('Lancer la génération de cette image ?')) return;
     
-    // Récupérer la réponse avec l'URL de l'image générée
-    const result = await res.json();
-    console.log('✅ Génération terminée:', result);
+    setLoading(true);
     
-    setLoading(false);
-    setPrompt('');
-    setFile(null);
-    
-    // Rafraîchir la liste des projets
-    await fetchProjects();
-    
-    // Afficher une confirmation
-    alert('Image générée avec succès ! Visible dans "Mes projets" ci-dessous.');
+    try {
+      // Récupérer le token d'accès
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Session expirée, reconnectez-vous');
+        setLoading(false);
+        return;
+      }
+
+      // Télécharger l'image d'entrée
+      const imageResponse = await fetch(inputImageUrl);
+      const imageBlob = await imageResponse.blob();
+      
+      // Créer le formulaire avec l'image et le prompt
+      const form = new FormData();
+      form.append('image', imageBlob, 'input-image.jpg');
+      form.append('prompt', promptText);
+      form.append('projectId', projectId);
+
+      console.log('🎨 Lancement de la génération pour le projet:', projectId);
+      
+      // Appeler l'API de génération
+      const res = await fetch('/api/generate', { 
+        method: 'POST', 
+        body: form,
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Erreur lors de la génération');
+        setLoading(false);
+        return;
+      }
+      
+      const result = await res.json();
+      console.log('✅ Génération terminée:', result);
+      
+      alert('Image générée avec succès !');
+      
+      // Rafraîchir les projets
+      await fetchProjects();
+      
+    } catch (error) {
+      console.error('Erreur:', error);
+      alert('Une erreur est survenue lors de la génération');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -279,12 +368,12 @@ export default function Dashboard() {
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Génération en cours...
+                      Préparation du paiement...
                     </>
                   ) : (
                     <>
                       <ImageIcon className="mr-2 h-5 w-5" />
-                      Générer l'image
+                      Générer (2€)
                     </>
                   )}
                 </Button>
@@ -385,6 +474,16 @@ export default function Dashboard() {
                         Génération...
                       </Badge>
                     )}
+                    {p.payment_status === 'paid' && !p.output_image_url && p.status !== 'processing' && (
+                      <Badge className="absolute top-3 right-3 z-10 bg-green-500 text-white border-0 shadow-lg">
+                        ✓ Payé
+                      </Badge>
+                    )}
+                    {p.payment_status === 'pending' && (
+                      <Badge className="absolute top-3 right-3 z-10 bg-yellow-500 text-white border-0 shadow-lg">
+                        En attente
+                      </Badge>
+                    )}
                     <div className="aspect-square relative bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
                       <img 
                         src={imageUrl} 
@@ -410,15 +509,36 @@ export default function Dashboard() {
                     </div>
                   </CardContent>
                   <CardFooter className="p-5 pt-0 flex gap-2 bg-slate-50/50">
-                    <Button 
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 border-slate-200 hover:border-slate-300 hover:bg-white"
-                      onClick={() => handleDownload(imageUrl, filename)}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Télécharger
-                    </Button>
+                    {p.payment_status === 'paid' && !p.output_image_url && p.status !== 'processing' ? (
+                      <Button 
+                        size="sm"
+                        className="flex-1 bg-gradient-to-r from-pink-600 to-red-600 hover:from-pink-700 hover:to-red-700 text-white"
+                        onClick={() => handleGenerate(p.id, p.input_image_url, p.prompt)}
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Génération...
+                          </>
+                        ) : (
+                          <>
+                            <ImageIcon className="mr-2 h-4 w-4" />
+                            Générer maintenant
+                          </>
+                        )}
+                      </Button>
+                    ) : p.output_image_url ? (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 border-slate-200 hover:border-slate-300 hover:bg-white"
+                        onClick={() => handleDownload(imageUrl, filename)}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Télécharger
+                      </Button>
+                    ) : null}
                     <Button 
                       variant="ghost"
                       size="sm"

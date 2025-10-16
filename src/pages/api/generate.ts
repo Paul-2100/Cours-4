@@ -47,6 +47,59 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const replicate = getReplicateClient();
 
     const { fields, files } = await parseForm(req);
+    
+    // Récupérer le projectId depuis les fields
+    const projectIdField = fields.projectId;
+    const projectId = typeof projectIdField === 'string'
+      ? projectIdField
+      : Array.isArray(projectIdField)
+        ? projectIdField[0] ?? ''
+        : '';
+
+    if (!projectId) {
+      return res.status(400).json({ error: 'Project ID requis' });
+    }
+
+    // Vérifier l'authentification
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Non autorisé - Token manquant' });
+    }
+
+    const token = authHeader.substring(7);
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.error('❌ User verification error:', userError);
+      return res.status(401).json({ error: 'Non autorisé - Token invalide' });
+    }
+
+    // Récupérer le projet et vérifier le paiement
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .single();
+
+    if (projectError || !project) {
+      console.error('❌ Project not found:', projectError);
+      return res.status(404).json({ error: 'Projet non trouvé' });
+    }
+
+    // Vérifier que l'utilisateur est propriétaire du projet
+    if (project.user_id !== user.id) {
+      console.error('❌ User not owner of project');
+      return res.status(403).json({ error: 'Accès refusé - Vous n\'êtes pas propriétaire de ce projet' });
+    }
+
+    // Vérifier le statut de paiement
+    if (project.payment_status !== 'paid') {
+      console.error('❌ Payment not completed:', project.payment_status);
+      return res.status(402).json({ error: 'Paiement requis - Le projet n\'est pas payé' });
+    }
+
+    console.log('✅ Project verified and paid:', projectId);
+
     const promptField = fields.prompt;
     const rawPrompt =
       typeof promptField === 'string'
@@ -202,40 +255,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Try to get authenticated user from Authorization header
-    let userId: string | null = null;
-    try {
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.substring(7);
-        const { data: { user } } = await supabase.auth.getUser(token);
-        userId = user?.id ?? null;
-      }
-    } catch (e) {
-      userId = null;
-    }
-
-    // Insert a project row with URLs instead of paths
-    try {
-      const insertPayload: any = {
-        prompt: prompt,
-        input_image_url: signedUrlData.signedUrl,
+    // Mettre à jour le projet avec l'image générée
+    const { error: updateError } = await supabase
+      .from('projects')
+      .update({
         output_image_url: outputSignedUrlData.signedUrl,
         status: 'completed',
-      };
-      if (userId) insertPayload.user_id = userId;
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', projectId)
+      .eq('user_id', user.id); // Sécurité supplémentaire
 
-      const { error: insertError } = await supabase.from('projects').insert([insertPayload]);
-      if (insertError) {
-        console.error('Insert project error', insertError);
-      }
-    } catch (e) {
-      console.error('Failed to insert project', e);
+    if (updateError) {
+      console.error('❌ Error updating project:', updateError);
+    } else {
+      console.log('✅ Project updated with output image:', projectId);
     }
 
     res.status(200).json({
       output_image_url: outputSignedUrlData.signedUrl,
       replicate_output_url: replicateOutputUrlForResponse,
+      projectId: projectId,
     });
   } catch (error) {
     console.error(error);
