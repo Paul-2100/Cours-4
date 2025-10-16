@@ -1,16 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, validateServerEnv } from '@/lib/env';
 
 // Utiliser le SERVICE_ROLE_KEY pour bypasser RLS
 function getSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  validateServerEnv();
   
-  if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Missing Supabase credentials');
-  }
-  
-  return createClient(supabaseUrl, supabaseServiceKey, {
+  return createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,

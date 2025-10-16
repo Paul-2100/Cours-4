@@ -4,6 +4,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import Replicate from 'replicate';
 import fs from 'fs';
 import { Buffer } from 'buffer';
+import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, REPLICATE_API_TOKEN, validateServerEnv, validateReplicateEnv } from '@/lib/env';
 
 export const config = {
   api: {
@@ -12,16 +13,8 @@ export const config = {
 };
 
 function getSupabaseClient(): SupabaseClient {
-  const supabaseUrl =
-    process.env.SUPABASE_URL ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error('Configuration Supabase manquante (SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY).');
-  }
-
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+  validateServerEnv();
+  return createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -30,12 +23,8 @@ function getSupabaseClient(): SupabaseClient {
 }
 
 function getReplicateClient(): Replicate {
-  const apiToken = process.env.REPLICATE_API_TOKEN;
-  if (!apiToken) {
-    throw new Error('REPLICATE_API_TOKEN manquant pour contacter Replicate.');
-  }
-
-  return new Replicate({ auth: apiToken });
+  validateReplicateEnv();
+  return new Replicate({ auth: REPLICATE_API_TOKEN! });
 }
 
 async function parseForm(req: NextApiRequest): Promise<{ fields: any; files: any }> {
