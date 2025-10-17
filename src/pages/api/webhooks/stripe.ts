@@ -71,28 +71,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const supabase = getSupabaseAdmin();
 
+      console.log('🔄 Updating project:', projectId, 'for user:', userId);
+
       // Mettre à jour le projet avec le statut de paiement
-      const { error: updateError } = await supabase
+      const { data: updatedProject, error: updateError } = await supabase
         .from('projects')
         .update({
           payment_status: 'paid',
           stripe_payment_intent_id: session.payment_intent as string,
           status: 'pending', // Prêt pour la génération
-          updated_at: new Date().toISOString(),
         })
         .eq('id', projectId)
-        .eq('user_id', userId); // Sécurité: vérifier que le user_id correspond
+        .eq('user_id', userId) // Sécurité: vérifier que le user_id correspond
+        .select();
 
       if (updateError) {
         console.error('❌ Error updating project:', updateError);
-        return res.status(500).json({ error: 'Failed to update project' });
+        console.error('❌ Error details:', JSON.stringify(updateError, null, 2));
+        return res.status(500).json({ 
+          error: 'Failed to update project',
+          details: updateError.message,
+          code: updateError.code
+        });
+      }
+
+      if (!updatedProject || updatedProject.length === 0) {
+        console.error('❌ No project found with id:', projectId, 'and user_id:', userId);
+        return res.status(404).json({ error: 'Project not found or access denied' });
       }
 
       console.log('✅ Project updated successfully:', projectId);
+      console.log('✅ Updated project data:', updatedProject[0]);
       console.log('🚀 Project ready for generation');
 
     } catch (error: any) {
       console.error('❌ Error processing webhook:', error);
+      console.error('❌ Error stack:', error.stack);
       return res.status(500).json({ error: error.message });
     }
   }
