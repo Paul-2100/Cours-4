@@ -247,7 +247,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .update({
         output_image_url: output_image_url,
         status: 'completed',
-        updated_at: new Date().toISOString(),
       })
       .eq('id', projectId)
       .eq('user_id', user.id); // Sécurité supplémentaire
