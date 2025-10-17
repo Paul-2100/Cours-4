@@ -139,21 +139,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Récupération d'une URL signée accessible publiquement
-    const {
-      data: signedUrlData,
-      error: signedUrlError,
-    } = await supabase
+    // Récupération d'une URL publique permanente
+    const { data: { publicUrl: input_image_url } } = supabase
       .storage
       .from('input-image')
-      .createSignedUrl(fileName, 60 * 10, { download: false });
+      .getPublicUrl(fileName);
 
-    if (signedUrlError || !signedUrlData?.signedUrl) {
-      console.error('Supabase signed URL error', signedUrlError);
-      return res.status(500).json({ error: "Impossible de générer l'URL de l'image" });
-    }
-
-    const input_image_url = signedUrlData.signedUrl;
+    console.log('✅ Input image URL:', input_image_url);
 
     // Appel au modèle Nano Banana sur Replicate
     const replicateInput = {
@@ -241,25 +233,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    const { data: outputSignedUrlData, error: outputSignedUrlError } = await supabase
+    // Récupération d'une URL publique permanente pour l'output
+    const { data: { publicUrl: output_image_url } } = supabase
       .storage
       .from('output-image')
-      .createSignedUrl(outputFileName, 60 * 60, { download: false });
+      .getPublicUrl(outputFileName);
 
-    if (outputSignedUrlError || !outputSignedUrlData?.signedUrl) {
-      console.error('Supabase output signed URL error', outputSignedUrlError);
-      return res.status(500).json({
-        error: "Image sauvegardée mais URL signée indisponible",
-        details: outputSignedUrlError?.message,
-        output_url: replicateOutputUrlForResponse,
-      });
-    }
+    console.log('✅ Output image URL:', output_image_url);
 
     // Mettre à jour le projet avec l'image générée
     const { error: updateError } = await supabase
       .from('projects')
       .update({
-        output_image_url: outputSignedUrlData.signedUrl,
+        output_image_url: output_image_url,
         status: 'completed',
         updated_at: new Date().toISOString(),
       })
@@ -273,7 +259,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     res.status(200).json({
-      output_image_url: outputSignedUrlData.signedUrl,
+      output_image_url: output_image_url,
       replicate_output_url: replicateOutputUrlForResponse,
       projectId: projectId,
     });

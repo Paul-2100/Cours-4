@@ -216,6 +216,52 @@ export default function Dashboard() {
     }
   };
 
+  const handleFixUrls = async () => {
+    if (!confirm('Réparer les URLs des images expirées pour tous vos projets ?')) return;
+    
+    setLoading(true);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Session expirée, reconnectez-vous');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('🔧 Réparation des URLs...');
+      
+      const res = await fetch('/api/fix-project-urls', { 
+        method: 'POST', 
+        headers: { 
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        credentials: 'include'
+      });
+      
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Erreur lors de la réparation');
+        setLoading(false);
+        return;
+      }
+      
+      const result = await res.json();
+      console.log('✅ Réparation terminée:', result);
+      
+      alert(`✅ Réparation réussie !\n\n${result.updated} projet(s) mis à jour\n${result.skipped} projet(s) déjà corrects`);
+      
+      // Rafraîchir les projets
+      await fetchProjects();
+      
+    } catch (error) {
+      console.error('Erreur:', error);
+      alert('Une erreur est survenue');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer ce projet ?')) return;
     
@@ -440,6 +486,26 @@ export default function Dashboard() {
                 }
               </p>
             </div>
+            {projects.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleFixUrls}
+                disabled={loading}
+                className="border-slate-300 hover:bg-slate-50"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Réparation...
+                  </>
+                ) : (
+                  <>
+                    🔧 Réparer les images
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
 
